@@ -1,14 +1,9 @@
-package AnnotationController;
-
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-<<<<<<< Updated upstream
+@Target(ElementType.TYPE)
 public @interface AnnotationController {
-
-=======
-public @interface AnnotationController{
-    
->>>>>>> Stashed changes
 }
