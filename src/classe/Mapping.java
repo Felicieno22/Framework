@@ -2,27 +2,23 @@ package classe;
 
 public class Mapping {
     String className;
-    String methodeName;
+    String methodName;
 
-
-    public Mapping(String className, String methodeName) {
-        this.className = className;
-        this.methodeName = methodeName;
+    public Mapping(String className, String methodName) {
+        this.setClassName(className);
+        this.setMethodName(methodName);
     }
-    
+
     public String getClassName() {
         return className;
     }
-
     public void setClassName(String className) {
         this.className = className;
     }
-
-    public String getMethodeName() {
-        return methodeName;
+    public String getMethodName() {
+        return methodName;
     }
-
-    public void setMethodeName(String methodeName) {
-        this.methodeName = methodeName;
+    public void setMethodName(String methodName) {
+        this.methodName = methodName;
     }
 }
