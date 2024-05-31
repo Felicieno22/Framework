@@ -65,17 +65,17 @@ public class FrontController extends HttpServlet {
             if (mapping != null) {
                 out.println("Mapping trouvé : " + mapping);
 
-                // Récupérer la classe et la méthode
+                
                 Class<?> clazz = Class.forName(mapping.getClassName());
                 Method method = clazz.getDeclaredMethod(mapping.getMethodeName());
 
-                // Créer une instance de la classe
+                
                 Object instance = clazz.getDeclaredConstructor().newInstance();
 
-                // Invoquer la méthode sur l'instance
+                
                 String result = (String) method.invoke(instance);
 
-                // Afficher la valeur retournée par la méthode
+                
                 out.println("Résultat de la méthode : " + result);
             } else {
                 out.println("Aucune méthode associée à ce chemin");
