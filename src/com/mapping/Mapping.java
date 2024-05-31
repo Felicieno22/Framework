@@ -1,4 +1,4 @@
-package classe;
+package com.mapping;
 
 public class Mapping {
     String className;
