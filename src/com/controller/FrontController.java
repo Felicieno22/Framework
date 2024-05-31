@@ -51,61 +51,46 @@ public class FrontController extends HttpServlet {
         }
     }
 
-    protected void processRequest(HttpServletRequest req, HttpServletResponse resp)
-    throws ServletException, IOException {
-        String contextPath = req.getContextPath(); // Obtenir le contexte de l'application
-        String urlPath = req.getRequestURI().substring(contextPath.length()); // Enlever le contexte de l'application        
-        if (urlPath == null || urlPath.isEmpty()) {
-            resp.getWriter().println("No URL path provided");
-            return;
-        }
-
-        Mapping mapping = urlMappings.get(urlPath);
-        PrintWriter out = resp.getWriter();
+    protected void processRequested(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
+        PrintWriter out = res.getWriter();
         try {
-               // Afficher le contenu du HashMap urlMappings
-               out.println("Contenu de urlMappings:");
-               for (HashMap.Entry<String, Mapping> entry : urlMappings.entrySet()) {
-                   String url = entry.getKey();
-                   Mapping mapping2 = entry.getValue();
-                   out.println("URL: " + url + " - Class: " + mapping2.getClassName() + ", Method: " + mapping2.getMethodName());
-               }
+            String url = req.getRequestURL().toString();
+            String contextPath = req.getContextPath();
+            String path = url.substring(url.indexOf(contextPath) + contextPath.length());
 
-                getListeControlleurs(getServletContext().getInitParameter("controllerPackage"));
-                resp.setContentType("text/html;charset=UTF-8");
-                if (mapping != null) {
-                    out.println("<!DOCTYPE html>");
-                    out.println("<html>");
-                    out.println("<head>");
-                    out.println("<title>Mapping Information</title>");
-                    out.println("</head>");
-                    out.println("<body>");
-                    out.println("<h1>Information for URL: " + urlPath + "</h1>");
-                    out.println("<ul>");
-                    out.println("<li>Class Name: " + mapping.getClassName() + "</li>");
-                    out.println("<li>Method Name: " + mapping.getMethodName() + "</li>");
-                    out.println("</ul>");
-                    out.println("</body>");
-                    out.println("</html>");
-                } else {
-                    out.println("<!DOCTYPE html>");
-                    out.println("<html>");
-                    out.println("<head>");
-                    out.println("<title>No Mapping Found</title>");
-                    out.println("</head>");
-                    out.println("<body>");
-                    out.println("<h1>No method associated with this URL path: " + urlPath + "</h1>");
-                    out.println("</body>");
-                    out.println("</html>");
-                }            
-        } catch (Exception e) {
-            out.println(e.getMessage());
-            for (StackTraceElement ste : e.getStackTrace()) {
-                out.println(ste);
+            out.println("URL: " + url);
+            out.println("Path: " + path);
+
+            Mapping mapping = urlMappings.get(path);
+            if (mapping != null) {
+                out.println("Mapping trouvé : " + mapping);
+
+                // Récupérer la classe et la méthode
+                Class<?> clazz = Class.forName(mapping.getClassName());
+                Method method = clazz.getDeclaredMethod(mapping.getMethodeName());
+
+                // Créer une instance de la classe
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                // Invoquer la méthode sur l'instance
+                String result = (String) method.invoke(instance);
+
+                // Afficher la valeur retournée par la méthode
+                out.println("Résultat de la méthode : " + result);
+            } else {
+                out.println("Aucune méthode associée à ce chemin");
             }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            out.println("Classe non trouvée : " + e.getMessage());
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+            out.println("Méthode non trouvée : " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.println("Erreur : " + e.getMessage());
         }
     }
-
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
