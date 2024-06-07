@@ -14,10 +14,13 @@ public class ModelView {
     public String getUrl() {
         return url;
     }
-
+    public void setUrl(String url) {
+        this.url = url;	
+    }
     public Map<String, Object> getData() {
         return data;
     }
+    
 
     public void addObject(String name, Object value) {
         data.put(name, value);
