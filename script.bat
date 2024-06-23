@@ -2,7 +2,7 @@
 setlocal
 
 REM Chemin vers le répertoire du projet
-set "PROJECT_DIR=C:\Users\Felicieno\Documents\fianarana\Fianarana\L2\Mr Naina"
+set "PROJECT_DIR=C:\Users\Felicieno\Documents\GitHub\framework"
 
 REM Nom du projet
 set "PROJECT_NAME=Framework"
