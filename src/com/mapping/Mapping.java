@@ -1,35 +1,21 @@
 package com.mapping;
 
 public class Mapping {
-    private String className;
-    private String methodName;
+    String className;
+    String methodeName;
 
-    public Mapping(String className, String methodName) {
+    public Mapping(String className, String methodeName) {
         this.className = className;
-        this.methodName = methodName;
+        this.methodeName = methodeName;
     }
 
-    public String getClassName() {
+
+    public String getMethodeName() {
+        return methodeName;
+    }
+
+    public String getClassName(){
         return className;
     }
-
-    public void setClassName(String className) {
-        this.className = className;
-    }
-
-    public String getMethodName() {
-        return methodName;
-    }
-
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
-    }
-
-    @Override
-    public String toString() {
-        return "Mapping{" +
-                "className='" + className + '\'' +
-                ", methodName='" + methodName + '\'' +
-                '}';
-    }
 }
+
