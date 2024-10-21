@@ -179,7 +179,6 @@ public class Utilities {
         }
     }
 
-    // Sprint 5 : Exception handler
     public void runFramework(HttpServletRequest request, HttpServletResponse response)
             throws Exception {
         if (this.ifMethod(request, this.hashMap) != null) {
