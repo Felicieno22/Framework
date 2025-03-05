@@ -1,37 +1,41 @@
 @echo off
 setlocal
 
-REM Chemin vers le répertoire du projet
-set "PROJECT_DIR=C:\Users\Felicieno\Documents\GitHub\framework"
+REM Set the servlet API path
+set "SERVLET_API=%cd%\lib\servlet-api.jar"
 
-REM Nom du projet
-set "PROJECT_NAME=Framework"
+REM Set the GSON path
+set "GSON=%cd%\lib\gson-2.8.8.jar"
 
-REM Répertoire des bibliothèques
-set "LIB_DIR=%PROJECT_DIR%\lib"
+REM Set the Commons FileUpload path
+set "FILEUPLOAD=%cd%\lib\commons-fileupload-1.4.jar"
 
-REM Répertoire source
-set "SRC_DIR=%PROJECT_DIR%src\com"
+REM Set source and output directories
+set "src=%cd%\src"
+set "OUTPUT_DIR=%cd%\bin"
+set "MYLIB_DIR=%OUTPUT_DIR%\myLib"
+set "JAR_FILE=%MYLIB_DIR%\framework.jar"
 
-REM Répertoire temporaire pour la compilation
-set "TEMP_DIR=%PROJECT_DIR%\temp"
+REM Create directories if they don't exist
+if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
+if not exist "%MYLIB_DIR%" mkdir "%MYLIB_DIR%"
 
-REM Création du répertoire temporaire s'il n'existe pas
-if not exist "%TEMP_DIR%" mkdir "%TEMP_DIR%"
-
-REM Compilation du code source
-for /r "%SRC_DIR%" %%i in (*.java) do (
-    javac -cp "%LIB_DIR%\*;" -sourcepath "%SRC_DIR%" -d "%TEMP_DIR%" "%%i"
+REM Clean the output directory except myLib directory
+for /D %%d in ("%OUTPUT_DIR%\*") do (
+    if /I not "%%~nxd"=="myLib" rd /S /Q "%%d"
+)
+for %%f in ("%OUTPUT_DIR%\*") do (
+    if /I not "%%~nxf"=="myLib" del /Q "%%f"
 )
 
-REM Création du fichier JAR
-jar -cf "%PROJECT_NAME%.jar" -C "%TEMP_DIR%" .
+REM Compile all Java files
+for /R "%src%" %%f in (*.java) do (
+    javac -cp "%SERVLET_API%;%src%;%GSON%;%FILEUPLOAD%" -d "%OUTPUT_DIR%" "%%f"
+)
 
-REM Déplacement du fichier JAR vers le répertoire lib du projet cible
-xcopy /y "%PROJECT_NAME%.jar" "%PROJECT_DIR%\SprintTest5\lib"
+REM Create the JAR file
+cd /d "%OUTPUT_DIR%"
+jar cvf "%JAR_FILE%" com
 
-REM Suppression du répertoire temporaire
-rmdir /s /q "%TEMP_DIR%"
-
-echo Création du JAR terminée.
+echo JAR creation completed.
 pause

@@ -1,4 +1,4 @@
-package jnd.mapping;
+package com.mapping;
 
 public class Mapping {
     private String className;

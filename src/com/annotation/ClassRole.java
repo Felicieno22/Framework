@@ -6,7 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface RequestParam {
-    String value() default "";
-}
+@Target(ElementType.TYPE)
+public @interface ClassRole {
+    String[] value();
+    int level() default 1;
+} 

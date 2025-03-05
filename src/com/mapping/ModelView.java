@@ -1,5 +1,9 @@
-package jnd.mapping;
+package com.mapping;
 
+<<<<<<< Updated upstream
+=======
+import com.validation.ValidationError;
+>>>>>>> Stashed changes
 import java.util.HashMap;
 import java.util.Map;
 
