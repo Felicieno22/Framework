@@ -1,4 +1,4 @@
-package com.annotation;
+package com.annotation.validation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface RequestParam {
-    String value() default "";
-}
+public @interface Min {
+    double value();
+    String message() default "La valeur doit être supérieure ou égale à {value}";
+} 
