@@ -176,9 +176,6 @@ public class FrontController extends HttpServlet {
                     Object[] methodArgs = getMethodArguments(targetMethod, req);
                     Object result = targetMethod.invoke(instance, methodArgs);
 
-<<<<<<< Updated upstream
-                Object result = targetMethod.invoke(instance, methodArgs);
-=======
                     if (result instanceof ModelView) {
                         ModelView modelView = (ModelView) result;
                         
@@ -202,7 +199,6 @@ public class FrontController extends HttpServlet {
                             }
                             return;
                         }
->>>>>>> Stashed changes
 
                         String viewUrl = modelView.getUrl();
                         Map<String, Object> data = modelView.getData();
@@ -218,15 +214,6 @@ public class FrontController extends HttpServlet {
                         out.print(jsonResponse);
                         out.flush();
                     }
-<<<<<<< Updated upstream
-
-                    RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
-                    dispatcher.forward(req, res);
-                } else {
-                    String jsonResponse = gson.toJson(result);
-                    out.print(jsonResponse);
-                    out.flush();
-=======
                 } catch (ValidationException ve) {
                     req.setAttribute("validationErrors", ve.getValidationErrors());
                     
@@ -240,6 +227,9 @@ public class FrontController extends HttpServlet {
                     } else {
                         req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
                     }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 }
             } else {
