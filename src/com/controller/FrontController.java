@@ -146,7 +146,36 @@ public class FrontController extends HttpServlet {
                 Object instance = clazz.getDeclaredConstructor().newInstance();
                 Object[] methodArgs = getMethodArguments(targetMethod, req);
 
+<<<<<<< Updated upstream
                 Object result = targetMethod.invoke(instance, methodArgs);
+=======
+                    if (result instanceof ModelView) {
+                        ModelView modelView = (ModelView) result;
+                        
+                        // Vérifier s'il y a des erreurs de validation
+                        ValidationError validationErrors = (ValidationError) req.getAttribute("validationErrors");
+                        if (validationErrors != null && validationErrors.hasErrors()) {
+                            modelView.setValidationErrors(validationErrors);
+                            
+                            // Vérifier si une URL de formulaire est spécifiée
+                            String formUrl = null;
+                            if (targetMethod.isAnnotationPresent(FormUrl.class)) {
+                                formUrl = targetMethod.getAnnotation(FormUrl.class).value();
+                            }
+                            
+                            // Si une URL de formulaire est spécifiée, rediriger vers celle-ci
+                            if (formUrl != null) {
+                                // Ajouter les erreurs de validation à la requête
+                                req.setAttribute("validationErrors", validationErrors);
+                                // Rediriger vers l'URL du formulaire
+                                req.getRequestDispatcher(formUrl).forward(req, res);
+                            } else {
+                                // Sinon, rediriger vers la page d'erreur par défaut
+                                req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                            }
+                            return;
+                        }
+>>>>>>> Stashed changes
 
                 if (result instanceof ModelView) {
                     ModelView modelView = (ModelView) result;
@@ -156,6 +185,7 @@ public class FrontController extends HttpServlet {
                     for (Map.Entry<String, Object> entry : data.entrySet()) {
                         req.setAttribute(entry.getKey(), entry.getValue());
                     }
+<<<<<<< Updated upstream
 
                     RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
                     dispatcher.forward(req, res);
@@ -163,6 +193,25 @@ public class FrontController extends HttpServlet {
                     String jsonResponse = gson.toJson(result);
                     out.print(jsonResponse);
                     out.flush();
+=======
+                } catch (ValidationException ve) {
+                    // Gérer les erreurs de validation
+                    req.setAttribute("validationErrors", ve.getValidationErrors());
+                    
+                    // Vérifier si une URL de formulaire est spécifiée
+                    String formUrl = null;
+                    if (targetMethod.isAnnotationPresent(FormUrl.class)) {
+                        formUrl = targetMethod.getAnnotation(FormUrl.class).value();
+                    }
+                    
+                    // Si une URL de formulaire est spécifiée, rediriger vers celle-ci
+                    if (formUrl != null) {
+                        req.getRequestDispatcher(formUrl).forward(req, res);
+                    } else {
+                        // Sinon, rediriger vers la page d'erreur par défaut
+                        req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                    }
+>>>>>>> Stashed changes
                 }
             } else {
                 throw new Exception("Aucune méthode associée à ce chemin");
