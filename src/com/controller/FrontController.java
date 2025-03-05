@@ -211,6 +211,9 @@ public class FrontController extends HttpServlet {
                         // Sinon, rediriger vers la page d'erreur par défaut
                         req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
                     }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 }
             } else {
