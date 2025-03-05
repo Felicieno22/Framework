@@ -1,7 +1,6 @@
 package jnd.controller;
 
 import com.google.gson.*;
-
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import jnd.annotation.Annotation;
@@ -9,9 +8,13 @@ import jnd.annotation.GET;
 import jnd.annotation.POST;
 import jnd.annotation.RequestBody;
 import jnd.annotation.RequestParam;
+import jnd.annotation.Role;
+import jnd.annotation.FormUrl;
 import jnd.mapping.Mapping;
 import jnd.mapping.ModelView;
 import jnd.mapping.MySession;
+import jnd.manager.AuthManager;
+import jnd.exception.ValidationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +27,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.List;
+
+// import org.apache.commons.fileupload.FileItem;
+// import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+// import org.apache.commons.fileupload.servlet.ServletFileUpload;
+// import org.apache.commons.fileupload.servlet.ServletRequestContext;
 
 public class FrontController extends HttpServlet {
 
@@ -143,26 +152,85 @@ public class FrontController extends HttpServlet {
                     throw new Exception("Méthode non trouvée : " + mapping.getMethodName());
                 }
 
-                Object instance = clazz.getDeclaredConstructor().newInstance();
-                Object[] methodArgs = getMethodArguments(targetMethod, req);
-
-                Object result = targetMethod.invoke(instance, methodArgs);
-
-                if (result instanceof ModelView) {
-                    ModelView modelView = (ModelView) result;
-                    String viewUrl = modelView.getUrl();
-                    Map<String, Object> data = modelView.getData();
-
-                    for (Map.Entry<String, Object> entry : data.entrySet()) {
-                        req.setAttribute(entry.getKey(), entry.getValue());
+                // Vérifier les rôles requis
+                if (targetMethod.isAnnotationPresent(Role.class)) {
+                    Role roleAnnotation = targetMethod.getAnnotation(Role.class);
+                    if (!AuthManager.isAuthenticated(req.getSession())) {
+                        // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié
+                        res.sendRedirect(req.getContextPath() + "/login");
+                        return;
                     }
+                    
+                    // Vérifier les rôles et le niveau requis
+                    if (!AuthManager.hasAnyRole(req.getSession(), roleAnnotation.value()) ||
+                        !AuthManager.hasRequiredLevel(req.getSession(), roleAnnotation.level())) {
+                        // Rediriger vers une page d'erreur d'autorisation
+                        res.sendError(HttpServletResponse.SC_FORBIDDEN, "Accès non autorisé");
+                        return;
+                    }
+                }
 
-                    RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
-                    dispatcher.forward(req, res);
-                } else {
-                    String jsonResponse = gson.toJson(result);
-                    out.print(jsonResponse);
-                    out.flush();
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+                
+                try {
+                    Object[] methodArgs = getMethodArguments(targetMethod, req);
+                    Object result = targetMethod.invoke(instance, methodArgs);
+
+                    if (result instanceof ModelView) {
+                        ModelView modelView = (ModelView) result;
+                        
+                        // Vérifier s'il y a des erreurs de validation
+                        ValidationError validationErrors = (ValidationError) req.getAttribute("validationErrors");
+                        if (validationErrors != null && validationErrors.hasErrors()) {
+                            modelView.setValidationErrors(validationErrors);
+                            
+                            // Vérifier si une URL de formulaire est spécifiée
+                            String formUrl = null;
+                            if (targetMethod.isAnnotationPresent(FormUrl.class)) {
+                                formUrl = targetMethod.getAnnotation(FormUrl.class).value();
+                            }
+                            
+                            // Si une URL de formulaire est spécifiée, rediriger vers celle-ci
+                            if (formUrl != null) {
+                                req.setAttribute("validationErrors", validationErrors);
+                                req.getRequestDispatcher(formUrl).forward(req, res);
+                            } else {
+                                req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                            }
+                            return;
+                        }
+
+                        String viewUrl = modelView.getUrl();
+                        Map<String, Object> data = modelView.getData();
+
+                        for (Map.Entry<String, Object> entry : data.entrySet()) {
+                            req.setAttribute(entry.getKey(), entry.getValue());
+                        }
+
+                        RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
+                        dispatcher.forward(req, res);
+                    } else {
+                        String jsonResponse = gson.toJson(result);
+                        out.print(jsonResponse);
+                        out.flush();
+                    }
+                } catch (ValidationException ve) {
+                    req.setAttribute("validationErrors", ve.getValidationErrors());
+                    
+                    String formUrl = null;
+                    if (targetMethod.isAnnotationPresent(FormUrl.class)) {
+                        formUrl = targetMethod.getAnnotation(FormUrl.class).value();
+                    }
+                    
+                    if (formUrl != null) {
+                        req.getRequestDispatcher(formUrl).forward(req, res);
+                    } else {
+                        req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                    }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
                 }
             } else {
                 throw new Exception("Aucune méthode associée à ce chemin");
