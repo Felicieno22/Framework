@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-package com.controller;
-=======
 package jnd.controller;
 
 import com.google.gson.*;
@@ -14,28 +11,16 @@ import jnd.annotation.RequestParam;
 import jnd.mapping.Mapping;
 import jnd.mapping.ModelView;
 import jnd.mapping.MySession;
->>>>>>> Stashed changes
+import jnd.validation.ValidationError;
+import jnd.validation.Validator;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.lang.reflect.Parameter;
 import java.util.HashMap;
-<<<<<<< Updated upstream
-import java.util.List;
-
-import com.mapping.Mapping;
-import com.mapping.Utilities;
-
-import annotation.Controller;
-import annotation.Get;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-=======
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -46,64 +31,51 @@ import java.util.List;
 // import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 // import org.apache.commons.fileupload.servlet.ServletFileUpload;
 // import org.apache.commons.fileupload.servlet.ServletRequestContext;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 public class FrontController extends HttpServlet {
-    List<String> controllerList;
-    HashMap<String, Mapping> urlMethod;
-    Utilities utl;
 
-    protected void getControllerList(String package_name) throws ServletException, ClassNotFoundException {
-        String bin_path = "WEB-INF/classes/" + package_name.replace(".", "/");
-        bin_path = getServletContext().getRealPath(bin_path);
-        File b = new File(bin_path);
-        controllerList.clear();
-        
-        for (File onefile : b.listFiles()) {
-            if (onefile.isFile() && onefile.getName().endsWith(".class")) {
-                Class<?> clazz = Class.forName(package_name + "." + onefile.getName().split(".class")[0]);
-                if (clazz.isAnnotationPresent(Controller.class))
-                    controllerList.add(clazz);
+    private Map<String, Mapping> urlMappings = new HashMap<>();
+    private Gson gson = new Gson();  // Instance de Gson pour la sérialisation JSON
 
-                for (Method method : clazz.getMethods()) {
-                    if (method.isAnnotationPresent((Class<? extends Annotation>) Get.class)) {
-                        Mapping mapping = new Mapping();
-                        // String key = "/"+clazz.getSimpleName()+"/"+method.getName();   
-                        String key = method.getAnnotation(Get.class).value();  
-                        if (urlMappings.containsKey(key)) {
-                            throw new ServletException("La methode '"+urlMappings.get(key).getMethod().getName()+"' possede deja l'URL '"+key+"' comme annotation, donc elle ne peux pas etre assigner a la methode '"+mapping.getMethod().getName()+"'");
-                        } else {
-                            urlMappings.put(key, mapping);
-                        }
-                    }
-                }
+    @Override
+    public void init() throws ServletException {
+        try {
+            findControllerClasses();
+        } catch (Exception e) {
+            logException(e);
+            throw new ServletException(e);
+        }
+    }
+
+    public void findControllerClasses() throws Exception {
+        String controllerPackage = getServletConfig().getInitParameter("controller");
+        if (controllerPackage == null || controllerPackage.isEmpty()) {
+            throw new Exception("Controller package not specified");
+        }
+
+        String path = controllerPackage.replace('.', '/');
+        File directory = new File(getServletContext().getRealPath("/WEB-INF/classes/" + path));
+
+        if (!directory.exists() || !directory.isDirectory()) {
+            throw new Exception("Package directory not found: " + directory.getAbsolutePath());
+        }
+
+        findClassesInDirectory(controllerPackage, directory);
+    }
+
+    private void findClassesInDirectory(String packageName, File directory) throws Exception {
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            if (file.isDirectory()) {
+                findClassesInDirectory(packageName + "." + file.getName(), file);
+            } else if (file.getName().endsWith(".class")) {
+                String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
+                addClassIfController(className);
             }
         }
     }
 
-    @Override
-    public void init() throws ServletException {
-        controllerList = new ArrayList<>();
-        urlMethod = new HashMap<>();
-        utl = new Utilities();
+    private void addClassIfController(String className) throws Exception {
         try {
-            utl.initializeControllers(this, this.controllerList, urlMethod);
-        } catch (Exception e) {
-            
-        }
-    }
-
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException, Exception {
-        response.setContentType("text/html;charset=UTF-8");
-        PrintWriter out = response.getWriter();
-        try {
-<<<<<<< Updated upstream
-            utl.runFramework(request, response);
-=======
             Class<?> clazz = Class.forName(className);
             if (clazz.isAnnotationPresent(Annotation.class)) {
                 Set<String> methodNames = new HashSet<>();
@@ -179,66 +151,151 @@ public class FrontController extends HttpServlet {
                 }
 
                 Object instance = clazz.getDeclaredConstructor().newInstance();
-                Object[] methodArgs = getMethodArguments(targetMethod, req);
+                
+                try {
+                    Object[] methodArgs = getMethodArguments(targetMethod, req);
+                    Object result = targetMethod.invoke(instance, methodArgs);
 
-                // Vérifiez si la requête est de type multipart
-                if (req.getContentType() != null && req.getContentType().startsWith("multipart/")) {
-                    for (Part part : req.getParts()) {
-                        String fileName = part.getSubmittedFileName();
-                        if (fileName != null) {
-                            // Traiter le fichier téléchargé
-                            // Enregistrer sur le disque
-                            File uploadedFile = new File("/upload/" + fileName);
-                            part.write(uploadedFile.getAbsolutePath());
+                    if (result instanceof ModelView) {
+                        ModelView modelView = (ModelView) result;
+                        
+                        // Vérifier s'il y a des erreurs de validation
+                        ValidationError validationErrors = (ValidationError) req.getAttribute("validationErrors");
+                        if (validationErrors != null && validationErrors.hasErrors()) {
+                            modelView.setValidationErrors(validationErrors);
+                            // Rediriger vers la page d'erreur par défaut
+                            req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                            return;
                         }
+
+                        String viewUrl = modelView.getUrl();
+                        Map<String, Object> data = modelView.getData();
+
+                        for (Map.Entry<String, Object> entry : data.entrySet()) {
+                            req.setAttribute(entry.getKey(), entry.getValue());
+                        }
+
+                        RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
+                        dispatcher.forward(req, res);
+                    } else {
+                        String jsonResponse = gson.toJson(result);
+                        out.print(jsonResponse);
+                        out.flush();
                     }
-                }
-
-                Object result = targetMethod.invoke(instance, methodArgs);
-
-                if (result instanceof ModelView) {
-                    ModelView modelView = (ModelView) result;
-                    String viewUrl = modelView.getUrl();
-                    Map<String, Object> data = modelView.getData();
-
-                    for (Map.Entry<String, Object> entry : data.entrySet()) {
-                        req.setAttribute(entry.getKey(), entry.getValue());
-                    }
-
-                    RequestDispatcher dispatcher = req.getRequestDispatcher(viewUrl);
-                    dispatcher.forward(req, res);
-                } else {
-                    String jsonResponse = gson.toJson(result);
-                    out.print(jsonResponse);
-                    out.flush();
+                } catch (ValidationException ve) {
+                    // Gérer les erreurs de validation
+                    req.setAttribute("validationErrors", ve.getValidationErrors());
+                    req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
                 }
             } else {
                 throw new Exception("Aucune méthode associée à ce chemin");
             }
->>>>>>> Stashed changes
         } catch (Exception e) {
-            out.println("Error: " + e.getMessage());
-        }
-
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        try {
-            processRequest(request, response);
-        } catch (Exception e) {
-            e.printStackTrace();
+            logException(e);
+            sendErrorPage(res, e.getMessage());
         }
     }
 
+    private Object[] getMethodArguments(Method method, HttpServletRequest req) throws Exception {
+        Parameter[] parameters = method.getParameters();
+        Object[] args = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
+            if (parameter.isAnnotationPresent(RequestBody.class)) {
+                Class<?> parameterType = parameter.getType();
+                Object parameterObject = parameterType.getDeclaredConstructor().newInstance();
+                
+                // Remplir l'objet avec les paramètres de la requête
+                for (Field field : parameterType.getDeclaredFields()) {
+                    String paramName = field.isAnnotationPresent(RequestParam.class)
+                            ? field.getAnnotation(RequestParam.class).value()
+                            : field.getName();
+                    String paramValue = req.getParameter(paramName);
+                    if (paramValue != null && !paramValue.isEmpty()) {
+                        field.setAccessible(true);
+                        field.set(parameterObject, convertParameter(paramValue, field.getType()));
+                    }
+                }
+                
+                // Valider l'objet
+                ValidationError validationErrors = Validator.validate(parameterObject);
+                if (validationErrors.hasErrors()) {
+                    // Si des erreurs sont présentes, les ajouter à la requête
+                    req.setAttribute("validationErrors", validationErrors);
+                    // Rediriger vers la page d'erreur
+                    throw new ValidationException("Erreurs de validation", validationErrors);
+                }
+                
+                args[i] = parameterObject;
+            } else if (parameter.getType() == MySession.class) {
+                args[i] = new MySession(req.getSession());
+            } else {
+                String paramName = null;
+                if (parameter.isAnnotationPresent(RequestParam.class)) {
+                    paramName = parameter.getAnnotation(RequestParam.class).value();
+                    String paramValue = req.getParameter(paramName);
+                    if (paramValue == null) {
+                        throw new Exception("ETU002457//Missing required parameter: " + paramName);
+                    }
+                    args[i] = convertParameter(paramValue, parameter.getType());
+                } else {
+                    throw new Exception("ETU002457//Missing parameter annotation: " + paramName);
+                }
+            }
+        }
+        return args;
+    }
+
+    private Object convertParameter(String value, Class<?> type) {
+        if (type == String.class) {
+            return value;
+        } else if (type == int.class || type == Integer.class) {
+            return Integer.parseInt(value);
+        } else if (type == long.class || type == Long.class) {
+            return Long.parseLong(value);
+        } else if (type == double.class || type == Double.class) {
+            return Double.parseDouble(value);
+        } else if (type == boolean.class || type == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        return value;
+    }
+
+    private void logException(Exception e) {
+        e.printStackTrace(System.err);
+    }
+
+    private void sendErrorPage(HttpServletResponse res, String errorMessage) throws IOException {
+        res.setContentType("text/html");
+        PrintWriter out = res.getWriter();
+        out.println("<html><body>");
+        out.println("<h1>Error</h1>");
+        out.println("<p>" + errorMessage + "</p>");
+        out.println("</body></html>");
+    }
+
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        try {
-            processRequest(request, response);
-        } catch (Exception e) {
-            e.printStackTrace();
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        processRequest(req, res);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        processRequest(req, res);
+    }
+
+    // Classe d'exception pour la validation
+    private static class ValidationException extends Exception {
+        private final ValidationError validationErrors;
+
+        public ValidationException(String message, ValidationError validationErrors) {
+            super(message);
+            this.validationErrors = validationErrors;
+        }
+
+        public ValidationError getValidationErrors() {
+            return validationErrors;
         }
     }
 }
