@@ -1,6 +1,7 @@
-package com.mapping;
+package jnd.mapping;
 
-import jakarta.servlet.http.HttpSession;;
+import jakarta.servlet.http.HttpSession;
+import java.util.Enumeration;
 
 public class MySession {
     private HttpSession session;
@@ -13,15 +14,15 @@ public class MySession {
         return session.getAttribute(key);
     }
 
-    public void add(String key, Object objet) {
-        session.setAttribute(key, objet);
+    public void add(String key, Object value) {
+        session.setAttribute(key, value);
     }
 
     public void delete(String key) {
         session.removeAttribute(key);
     }
 
-    public HttpSession getSession() {
-        return session;
+    public Enumeration<String> getAttributeNames() {
+        return session.getAttributeNames();
     }
 }
